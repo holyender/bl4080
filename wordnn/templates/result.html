@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 class="sub-header">Find Word NN</h2>
+
+    <div id="main" style="height:500px;border:1px solid #ccc;padding:10px;"></div>
+
+    {% for r in rs %}
+        <p>
+            <span><a href="/wordvec/?word={{ r.0 }}">{{ r.0 }}</a></span>
+            <span>({{ r.1 }})</span>
+            <a href="#exchange" class="btn btn-primary btn-xs exchange" data-word="{{ r.0 }}">swap</a>
+        </p>
+    {% endfor %}
+
+
+        <input type="text" class="form-control" name="exchange1">
+        <input type="text" class="form-control" name="exchange2">
+        <a href="##" class="btn btn-warning" id="exchange">Exchange</a>
+
+{% endblock %}
+
+
+{% block script %}
+
+    <script src="/static/js/esl.js"></script>
+    <script type="text/javascript">
+
+    var flag = 1
+
+    $(".exchange").click(function(){
+        var word = $(this).attr("data-word")
+        if(flag==1){
+            $("[name='exchange1']").val(word)
+            flag=2
+        }
+        else{
+            $("[name='exchange2']").val(word)
+            flag=1
+        }
+    })
+
+
+    $("#exchange").click(function(){
+        var word1 = $("[name='exchange1']").val()
+        var word2 = $("[name='exchange2']").val()
+        $.ajax({
+            url:"/exchange/",
+            method:"get",
+            data:{
+                word1:word1,
+                word2:word2
+            },
+            success:function(){
+                top.location.reload()
+            },
+            error:function(){
+                alert("error!")
+            },
+        })
+    })
+
+
+    require.config({
+        paths:{ 
+            echarts:'/static/js/echarts',
+            'echarts/chart/bar' : '/static/js/echarts-map',
+            'echarts/chart/line': '/static/js/echarts-map',
+            'echarts/chart/map' : '/static/js/echarts-map'
+        }
+    });
+    
+    require(
+        [
+            'echarts',
+            'echarts/chart/bar',
+            'echarts/chart/line',
+            'echarts/chart/map'
+        ],
+        function (ec) {
+            var myChart = ec.init(document.getElementById('main'));
+            var option = {
+                title : {
+                    text: 'SWE Result',
+                },
+                tooltip : {
+                    trigger: 'axis'
+                },
+                legend: {
+                    x : 'center',
+                    data:['{{ userWord }}']
+                },
+                toolbox: {
+                    show : true,
+                    feature : {
+                        // mark : {show: true},
+                        dataView : {show: true, readOnly: false},
+                        restore : {show: true},
+                        saveAsImage : {show: true}
+                    }
+                },
+                // calculable : true,
+                polar : [
+                    {
+                        indicator : [
+                            {% for r in rs %}
+                                {text : '{{ r.0 }}', max:{{ max_value }}, min:{{ min_value }}},
+                            {% endfor %}
+                        ],
+                        radius : 130
+                    }
+                ],
+                series : [
+                    {
+                        name: 'result',
+                        type: 'radar',
+                        itemStyle: {
+                            normal: {
+                                areaStyle: {
+                                    type: 'default'
+                                }
+                            }
+                        },
+                        data : [
+                            {
+                                value : [
+                                    {% for r in rs %}
+                                        {{ r.1 }},
+                                    {% endfor %}
+                                ],
+                                name : '{{ userWord }}'
+                            }
+                        ]
+                    }
+                ]
+            };
+                                
+                    
+
+            myChart.setOption(option);
+            
+
+        }
+    );
+    </script>
+
+    <script>
+
+        $('#table').bootstrapTable()
+
+        $("#findwordnn").addClass('active')
+
+    </script>
+{% endblock %}
